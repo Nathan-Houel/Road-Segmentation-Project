@@ -22,36 +22,55 @@ class DoubleConv(nn.Module):
         return self.double_conv(x)
     
 
-# ----------------------------------------------------------------------------
-
 
 class UNET(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1):
+    def __init__(self, in_channels=3, out_channels=1, features=[64, 128, 256, 512]):
         super().__init__()
-        
-        # --- LA DESCENTE (Encoder) ---
-        # On va créer 4 étages qui descendent.
-        # À chaque étage :
-        # 1. On applique la DoubleConv pour extraire les features.
-        # 2. On applique un MaxPool pour diviser la taille par 2 (Zoom Out).
-        
-        # Etage 1 : On passe de 3 canaux (RGB) à 64
-        self.ups = nn.ModuleList() # On stockera la montée ici plus tard
-        self.downs = nn.ModuleList() # On stocke la descente ici
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2) # Divise la taille par 2
+        self.downs = nn.ModuleList()       # Une liste spéciale PyTorch pour stocker nos couches
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2) # L'outil pour diviser la taille par 2
 
-        # Définissons les canaux pour chaque étage de la descente
-        # 64 -> 128 -> 256 -> 512
-        features = [64, 128, 256, 512]
-        
-        # TODO: Coder la boucle de création des couches de descente
-        # Pour chaque feature dans la liste 'features' :
-        #   On ajoute une DoubleConv(in_channels, feature) dans self.downs
-        #   On met à jour in_channels pour qu'il soit égal à feature (relais)
-        
-        # --- LE FOND (Bottleneck) ---
-        # C'est le point le plus bas (1024 canaux)
+        # Encodeur
+        for feature in features:
+            self.downs.append(DoubleConv(in_channels, feature))
+            in_channels = feature
+
+        # Bottleneck
         self.bottleneck = DoubleConv(features[-1], features[-1]*2)
-        
-        # --- LA MONTÉE (Decoder) ---
-        # (On verra ça juste après, concentrons-nous sur la descente d'abord)
+
+        # Décodeur
+        self.ups = nn.ModuleList()
+        for feature in reversed(features):
+            self.ups.append(nn.ConvTranspose2d(feature*2, feature, kernel_size=2, stride=2))
+            self.ups.append(DoubleConv(feature*2, feature))
+
+        # Couche de Classification Pixel par Pixel
+        self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
+
+
+    def forward(self, x):
+        skip_connections = [] # Liste locale ici 
+
+        # Descente
+        for down in self.downs:
+            x = down(x)
+            skip_connections.append(x)
+            x = self.pool(x)
+
+        # Bottleneck
+        x = self.bottleneck(x)
+
+        # Remontée
+        skip_connections = skip_connections[::-1] # On inverse la liste des souvenirs pour que le premier souvenir corresponde au dernier étage (le plus profond)
+
+        # On boucle de 0 à la fin, par pas de 2
+        for idx in range(0, len(self.ups), 2):
+            # Étape A : On remonte (ConvTranspose2d)
+            x = self.ups[idx](x)
+            
+            # Étape B : On récupère le souvenir correspondant
+            skip_connection = skip_connections[idx // 2]
+            concat_skip = torch.cat((x, skip_connection), dim=1)
+            x = self.ups[idx+1](concat_skip)
+
+        # Sortie
+        return self.final_conv(x)
