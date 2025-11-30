@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from model import UNET
 from my_dataset import RoadDataset
 
+
 # --- HYPERPARAMÈTRES ---
 LEARNING_RATE = 1e-4  # Vitesse à laquelle le modèle modifie ses poids (trop grand = instable, trop petit = lent)       
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -15,7 +16,6 @@ IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 TRAIN_IMG_DIR = "dataset/images" 
 TRAIN_MASK_DIR = "dataset/masks"
-
 
 
 if __name__ == "__main__":
@@ -35,4 +35,3 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     # Boucle d'entraînement
-    
