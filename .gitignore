@@ -3,6 +3,5 @@ __pycache__/
 *.jpg
 *.png
 patches/
-dataset/
 Test_GPU.py
 *.pth
