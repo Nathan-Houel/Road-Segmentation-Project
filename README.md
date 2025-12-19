@@ -57,7 +57,7 @@ Le réseau de neurones n'est pas un import de librairie pré-existante.
 
 
 ## 🚀 Utilisation
-1. **Entraînement du modèle**
+### 1. Entraînement du modèle
 Pour lancer l'entraînement sur votre dataset :
 ```bash
 python train.py
@@ -69,7 +69,7 @@ python train.py
 
 - **Sauvegarde** : Le modèle final est sauvegardé sous `mon_UNET.pth`.
 
-2. **Prédiction (Inférence)**
+### 2. Prédiction (Inférence)
 Pour tester le modèle sur une nouvelle image (ex: `Test_image.jpg`) :
 
 1. Assurez-vous que le fichier `mon_UNET.pth` existe.
